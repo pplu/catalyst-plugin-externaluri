@@ -25,6 +25,9 @@ my $tests = {
   '/very/secure/content' => 'https://content.example.com/very/secure/content',
   '/versioned/sytlesheet.css' => 'http://static.example.com/0.01/versioned/sytlesheet.css',
   '/prefixed/thing.gif' => 'http://localhost/v2/prefixed/thing.gif',
+  '/archive/stuff' => 'http://archive.example.com/archive/stuff',
+  # secure/archive should first match the "secure" rule, and never match the archive rule
+  '/secure/archive' => 'https://localhost/secure/archive',
 };
 
 foreach my $test (keys %$tests){

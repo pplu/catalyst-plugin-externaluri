@@ -51,13 +51,21 @@ around uri_for => sub {
 
   my $uri = $c->$orig($path, @args);
 
-  foreach my $search_path (keys %$config){
-    if ($path =~ m/$search_path/){
-      my $changes = $c->_get_changes_for_uri($config->{ $search_path });
+  foreach my $rule (@$config){
+    my ($match, $rewrite, $continue) = (undef, undef, 0);
+
+    $match = (exists $rule->{ match }) ? $rule->{ match } : (keys %$rule)[0] ;
+    $rewrite = (exists $rule->{ rewrite }) ? $rule->{ rewrite } : (values %$rule)[0] ;
+    $continue = $rule->{ continue } if (exists $rule->{ continue });
+
+    if ($path =~ m/$match/){
+      my $changes = $c->_get_changes_for_uri($rewrite);
       $uri->scheme($changes->{ scheme }) if (defined $changes->{ scheme });
       $uri->host($changes->{ host }) if (defined $changes->{ host });
       $uri->port($changes->{ port }) if (defined $changes->{ port });
       $uri->path($changes->{ path } . $uri->path) if (defined $changes->{ path });
+    
+      last if (not $continue);
     }
   }
 
@@ -83,12 +91,14 @@ In MyApp.pm
 In MyApps configuration:
 
     __PACKAGE__->config(
-        externaluri => {
+        externaluri => [
             # Converts urls with the form of /static/css to start with another domain name 
-            '^/static' => 'http://static.mydomain.com'
+            { '^/static' => 'http://static.mydomain.com' },
             ...
-            'MATCH' => 'REWRITE'
-        }
+            { 'MATCH' => 'REWRITE' }
+            or
+            { match => '^/static', rewrite => 'http://static.mydomain.com' },
+        ]
     );
 
 =head1 DESCRIPTION
@@ -104,7 +114,7 @@ If you upload your resources to services like Amazon S3, CloudFiles, or CDNs
 you can easily change the appropiate urls in your application to point to the resources
 on that provider.
 
-  '^/static/' => 'http://yours3bucket.s3.amazonaws.com/'
+  { '^/static/' => 'http://yours3bucket.s3.amazonaws.com/' }
 
   # $c->uri_for('/static/css/main.css') gets converted into
   # http://yours3bucket.s3.amazonaws.com/static/css/main.css
@@ -115,8 +125,8 @@ Since your pages now point to various domains, your browser will open parallel c
 to those domains (enabling faster pages loads). Try splitting images, js and css to load from 
 different domains.
 
-  '^/static/css/' => 'http://css.myapp.com/',
-  '^/static/js/'  => 'http://js.myapp.com/',
+  { '^/static/css/' => 'http://css.myapp.com/' },
+  { '^/static/js/'  => 'http://js.myapp.com/' },
 
   # $c->uri_for('/static/css/main.css') gets converted into
   # http://css.myapp.com/static/css/main.css
@@ -128,16 +138,27 @@ different domains.
 You can prefix a version number to all your static URLs. That way, when you deploy, you can
 point all your static contents to fresh, new, uncached versions of your files.
 
-  '^/static' => 'http://js.mydomain.com/v1'
+  { '^/static' => 'http://js.mydomain.com/v1' }
 
   # $c->uri_for('/static/js/framework.js') gets converted into
   # http://js.myapp.com/v1/static/js/framework.js
 
 =head1 Configuration
 
-Each call to uri_for will evaluate the MATCHES in the configuration of the plugin. Each key is
-a regular expression to match against the uri that is passed to  uri_for. When a key matches 
-the uri, the REWRITE gets applied.
+The C<externaluri> key of the configuration has to contain an ARRAY of RULES. Each call to 
+uri_for will evaluate the RULES in the configuration of the plugin. 
+
+Each rule is a hashref that has the form of:
+
+  { 'REGEX' => 'REWRITE' }
+
+or
+
+  { match => 'REGEX', rewrite => 'REWRITE' [, continue => 1 ] }
+
+Each rules match is evaluated against the uri that is passed to C<uri_for>. When a key matches 
+the uri, the REWRITE gets applied, and evaluation of rules is interrupted, unless stated in the rule
+with a C<continue> key with a value of 1.
 
 REWRITE rules force specific portions of a url to their specification:
 
@@ -160,6 +181,8 @@ what you meant to do. You probably meant C<'^/static'>
 =head1 AUTHOR
 
 Jose Luis Martinez (JLMARTIN)
+
+Miquel Ruiz (MRUIZ)
 
 =head1 COPYRIGHT
 

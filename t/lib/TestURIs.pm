@@ -42,18 +42,20 @@ __PACKAGE__->config(
     # Disable deprecated behavior needed by old applications
     disable_component_resolution_regex_fallback => 1,
     enable_catalyst_header => 1, # Send X-Catalyst header
-    externaluri => {
-      '^/static/' => 'https://static.example.com/mystatic',
-      '^/static2/' => 'https://static.example.com/',
-      '^/static3/' => 'https://static.example.com/mystatic',
-      '^/static4/' => 'https://static.example.com/mystatic/',
-      '^/css' => 'http://css.example.com',
-      '^/js' => 'js.example.com:99',
-      'content' => 'content.example.com',
-      'secure' => 'https://',
-      '^/versioned' => "http://static.example.com/$VERSION",
-      '^/prefixed' => "/v2",
-    }
+    externaluri => [
+      { '^/static/' => 'https://static.example.com/mystatic' },
+      { '^/static2/' => 'https://static.example.com/' },
+      { match => '^/static3/', rewrite => 'https://static.example.com/mystatic' },
+      { '^/static4/' => 'https://static.example.com/mystatic/' },
+      { '^/css' => 'http://css.example.com' },
+      { '^/js' => 'js.example.com:99' },
+      { match => 'content', rewrite => 'content.example.com', continue => 1 },
+      { 'secure' => 'https://' },
+      { '^/versioned' => "http://static.example.com/$VERSION" },
+      { '^/prefixed' => "/v2" },
+
+      { match => 'archive', rewrite => 'archive.example.com' },
+    ]
 );
 
 # Start the application

@@ -3,8 +3,6 @@ package Catalyst::Plugin::ExternalURI;
 use Moose::Role;
 use namespace::autoclean;
 
-our $VERSION = '0.01';
-
 use Regexp::Common qw /URI/;
 use Regexp::Common::URI::RFC2396 qw /$host $port $path_segments/;
 

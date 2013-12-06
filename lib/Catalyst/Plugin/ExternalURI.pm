@@ -76,7 +76,7 @@ Catalyst::Plugin::ExternalURI - Rewrite URLs generated with uri_for
 
 =head1 VERSION
 
-Version 0.001
+Version 0.02
 
 =head1 SYNOPSIS
 
